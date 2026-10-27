@@ -42,7 +42,11 @@ const path = require("node:path");
 // renderer owns the number; this is the IPC widen target).
 const SIDEBAR_AUTOCLOSE = 928;
 
-const PRODUCT_NAME = "LearnHarness";
+// A build may rename itself (the personal build stamps "productName" into
+// the packaged package.json via extraMetadata): the name decides userData
+// and the single-instance lock, so a renamed build never shares data with,
+// or gets locked out by, an installed LearnHarness. Unset → as before.
+const PRODUCT_NAME = require("../package.json").productName || "LearnHarness";
 
 // APP NAME → userData (owner, 2026-10-10): the Application Support dir is
 // exactly "LearnHarness" in dev AND packaged. Packaged Electron would
@@ -506,6 +510,13 @@ function installUpdateNow() {
 function setupAutoUpdater() {
 	if (!app.isPackaged) {
 		log("auto-update: dev build — updater disabled");
+		reportUpdateStatus("disabled");
+		return;
+	}
+	// A build with no publish config ships no update feed (the personal
+	// build, electron-builder.personal.yml): nothing to check, not an error.
+	if (!process.env.LH_UPDATE_FEED && process.resourcesPath && !fs.existsSync(path.join(process.resourcesPath, "app-update.yml"))) {
+		log("auto-update: no update feed in this build — updater disabled");
 		reportUpdateStatus("disabled");
 		return;
 	}

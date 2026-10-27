@@ -110,6 +110,31 @@ Open **http://localhost:3000** in your browser. Leave the terminal open while yo
 
 API-key providers still work too, if you'd rather use them.
 
+## Desktop app (macOS)
+
+Prefer a regular app window over a browser tab? Build **Learning Harness.app** (Apple Silicon Macs):
+
+```bash
+npm run desktop:personal
+```
+
+This takes a few minutes. It compiles the app, runs a quick check that the built server starts, and packages everything into `dist/mac-arm64/Learning Harness.app`. Copy it into Applications:
+
+```bash
+ditto "dist/mac-arm64/Learning Harness.app" "/Applications/Learning Harness.app"
+```
+
+Then open it from Launchpad or Spotlight like any other app, and do the same first-time steps as above (Settings → Models).
+
+Good to know:
+
+- **Built for your own Mac.** The app is ad-hoc signed, not signed with an Apple Developer account. It runs fine on the Mac that built it; if you copy it to another Mac, macOS will warn that it's from an unidentified developer.
+- **No auto-updates.** To update, `git pull`, `npm install`, then build and copy it again.
+- **Its own data.** Sessions and settings live in `~/Library/Application Support/Learning Harness/`, separate from the browser version's `data/` folder and from the official LearnHarness app if you have it installed. Both apps can run at the same time.
+- **No terminal needed.** The app finds Claude Code by itself in the usual install locations. If yours is somewhere unusual, set `LH_CLAUDE_BIN` to its path.
+
+To try the desktop window without packaging (it reloads as you edit code), run `npm run desktop:dev`.
+
 ## Troubleshooting
 
 | Problem | Fix |

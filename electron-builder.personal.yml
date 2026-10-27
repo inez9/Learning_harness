@@ -1,0 +1,28 @@
+# Personal desktop build — `npm run desktop:personal`.
+#
+# Everything comes from electron-builder.yml; this file only overrides what
+# a personal, unsigned build on your own Mac needs:
+#   - its own name + app id, so it never shares data, the single-instance
+#     lock, or updates with the official LearnHarness app (extraMetadata
+#     stamps productName into the packaged package.json; electron/main.cjs
+#     reads it for the app name);
+#   - no Apple Developer signing or notarization (ad-hoc signed instead —
+#     fine for an app you build and run on your own machine). Hardened
+#     runtime is off: it only matters for notarization, and with an ad-hoc
+#     signature its library validation can refuse the server's native
+#     add-ons (PDF/image rendering);
+#   - the ready-made .icns icon (the layered build/icon.icon needs Xcode 26's
+#     actool);
+#   - no update feed: without app-update.yml the updater stays off, so the
+#     app can never "update" itself to an upstream release.
+extends: ./electron-builder.yml
+appId: io.github.inez9.LearningHarness
+productName: Learning Harness
+extraMetadata:
+  productName: Learning Harness
+mac:
+  identity: "-"
+  notarize: false
+  hardenedRuntime: false
+  icon: build/icon.icns
+publish: null

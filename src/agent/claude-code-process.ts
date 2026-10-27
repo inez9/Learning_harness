@@ -22,7 +22,25 @@ import * as path from "node:path";
 import * as readline from "node:readline";
 import { CLAUDE_CODE_MCP_SERVER, configKey, type ClaudeCodeConfig, type ClaudeCodeContent } from "./claude-code-request.ts";
 
-const CLAUDE_BIN = process.env.LH_CLAUDE_BIN || "claude";
+/** Where `claude` lives. An app opened from Finder gets a minimal PATH
+ *  (/usr/bin:/bin:…), so besides PATH we look in the installers' usual
+ *  homes: the native installer (~/.local/bin), Homebrew, npm globals. */
+function resolveClaudeBin(): string {
+	if (process.env.LH_CLAUDE_BIN) return process.env.LH_CLAUDE_BIN;
+	const home = os.homedir();
+	const dirs = [
+		...(process.env.PATH ?? "").split(path.delimiter),
+		path.join(home, ".local", "bin"), path.join(home, ".claude", "local"),
+		"/opt/homebrew/bin", "/usr/local/bin", path.join(home, ".npm-global", "bin"),
+	];
+	for (const dir of dirs) {
+		if (!dir) continue;
+		const candidate = path.join(dir, "claude");
+		try { fs.accessSync(candidate, fs.constants.X_OK); return candidate; } catch { /* keep looking */ }
+	}
+	return "claude"; // spawn reports ENOENT → "CLI not found" in the UI
+}
+const CLAUDE_BIN = resolveClaudeBin();
 const POOL_MAX = 3;
 const IDLE_MS = 5 * 60_000;
 
@@ -85,7 +103,9 @@ export function claudeCodeArgs(config: ClaudeCodeConfig, dir: string): string[] 
 	if (config.tools.length > 0) {
 		const toolsFile = path.join(dir, "tools.json");
 		fs.writeFileSync(toolsFile, JSON.stringify(config.tools));
-		const mcp = { mcpServers: { [CLAUDE_CODE_MCP_SERVER]: { command: process.execPath, args: [mcpStub()], env: { LH_TOOLS_FILE: toolsFile } } } };
+		// process.execPath is Electron's binary in the desktop app: it runs
+		// the stub as plain Node only with ELECTRON_RUN_AS_NODE (ignored by Node).
+		const mcp = { mcpServers: { [CLAUDE_CODE_MCP_SERVER]: { command: process.execPath, args: [mcpStub()], env: { LH_TOOLS_FILE: toolsFile, ELECTRON_RUN_AS_NODE: "1" } } } };
 		args.push("--mcp-config", JSON.stringify(mcp), "--allowedTools", `mcp__${CLAUDE_CODE_MCP_SERVER}`);
 	}
 	return args;
